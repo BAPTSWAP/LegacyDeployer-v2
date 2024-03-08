@@ -5,6 +5,7 @@
 
     - TODO:
         - who can update fees? admin or module deployer?
+        - add a freeze function
 */
 
 module bapt_framework::deployer_v2 {
