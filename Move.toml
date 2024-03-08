@@ -1,0 +1,18 @@
+[package]
+name = "LegacyCoinDeployerV2"
+version = "1.0.0"
+authors = []
+
+[addresses]
+bapt_framework = "a55a7122aa085e4bf34b755675fb900c40ee92f60c068255609ecea8ef4123f3"
+baptswap_v2dot1 = "0xe52923154e25c258d9befb0237a30b4001c63dc3bb73011c29cb3739befffcef"
+
+[dev-addresses]
+dev = "0x1337"
+
+[dependencies]
+AptosFramework = {git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "mainnet"}
+BaptSwap = {local = "./packages/BaptSwap"}
+BaptswapV2 = {local = "./packages/BaptswapV2"}
+
+[dev-dependencies]
