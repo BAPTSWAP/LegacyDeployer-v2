@@ -5,9 +5,10 @@
 
     - TODO:
         - who can update fees? admin or module deployer?
+        - add freeze function
 */
 
-module bapt_framework::deployer_v2 {
+module bapt_framework_testnet::deployer_v2 {
 
     use aptos_framework::coin::{Self, BurnCapability, FreezeCapability};
     use aptos_framework::aptos_coin::{AptosCoin as APT};
@@ -64,6 +65,12 @@ module bapt_framework::deployer_v2 {
     // ------
 
     #[event]
+    struct BurnCapCreated has drop, store { cointype: String }
+
+    #[event]
+    struct FreezeCapCreated has drop, store { cointype: String }
+
+    #[event]
     struct FeeUpdated has drop, store { old_fee: u64, new_fee: u64 }
 
     #[event]
@@ -72,13 +79,16 @@ module bapt_framework::deployer_v2 {
     #[event]
     struct CoinsBurned has drop, store { cointype: String, amount: u64 }
 
+    #[event]
+    struct CoinsFrozen has drop, store { cointype: String, amount: u64 }
+
     // -----------
     // Initializer
     // -----------
 
     entry fun init(signer_ref: &signer, fee: u64) {
         let signer_addr = signer::address_of(signer_ref);
-        assert!(signer_addr == @bapt_framework, ENOT_BAPT_ACCOUNT);
+        assert!(signer_addr == @bapt_framework_testnet, ENOT_BAPT_ACCOUNT);
         // init config
         move_to<Config>(
             signer_ref,
@@ -161,13 +171,13 @@ module bapt_framework::deployer_v2 {
     /// Get the current admin
     public fun admin(): address acquires Config {
         assert_config_initialized();
-        borrow_global<Config>(@bapt_framework).admin
+        borrow_global<Config>(@bapt_framework_testnet).admin
     }
 
     #[view]
     /// Get the current fee
     public fun fee(): u64 acquires Config {
-        borrow_global<Config>(@bapt_framework).fee
+        borrow_global<Config>(@bapt_framework_testnet).fee
     }
 
     #[view]
@@ -214,7 +224,7 @@ module bapt_framework::deployer_v2 {
     public entry fun set_admin(signer_ref: &signer, new_admin: address) acquires Config {
         assert_config_initialized();
         let signer_addr = signer::address_of(signer_ref);
-        let config = borrow_global_mut<Config>(@bapt_framework);
+        let config = borrow_global_mut<Config>(@bapt_framework_testnet);
         assert!(config.admin == signer_addr, ENOT_BAPT_ACCOUNT);
         // assert new_admin is not same as old admin
         let old_admin = config.admin;
@@ -228,7 +238,7 @@ module bapt_framework::deployer_v2 {
     public entry fun set_fee(signer_ref: &signer, new_fee: u64) acquires Config {
         assert_config_initialized();
         let signer_addr = signer::address_of(signer_ref);
-        let config = borrow_global_mut<Config>(@bapt_framework);
+        let config = borrow_global_mut<Config>(@bapt_framework_testnet);
         assert!(config.admin == signer_addr, ENOT_BAPT_ACCOUNT);
         // assert new_fee is not same as old fee
         let old_fee = config.fee;
@@ -243,7 +253,7 @@ module bapt_framework::deployer_v2 {
     // ----------------
 
     inline fun assert_config_initialized() {
-        assert!(exists<Config>(@bapt_framework), EDEPLOYER_NOT_INITIALIZED);
+        assert!(exists<Config>(@bapt_framework_testnet), EDEPLOYER_NOT_INITIALIZED);
     }
 
     inline fun generate_coin<CoinType>(
@@ -263,18 +273,25 @@ module bapt_framework::deployer_v2 {
             decimals, 
             true
         );
+        coin::register<CoinType>(deployer);
         // mint 
         let coins_minted = coin::mint(total_supply, &mint_cap);
         coin::deposit(signer::address_of(deployer), coins_minted);
         // destroy mint cap
         coin::destroy_mint_cap<CoinType>(mint_cap);
         // deal freeze and burn caps
-        let maybe_burn_cap = if (burnable) { option::some(burn_cap) 
+        let maybe_burn_cap = if (burnable) { 
+            // emit burn cap created event 
+            event::emit(BurnCapCreated { cointype: name });
+            option::some(burn_cap) 
         } else { 
             coin::destroy_burn_cap<CoinType>(burn_cap);
             option::none() 
         };
-        let maybe_freeze_cap = if (freezable) { option::some(freeze_cap) 
+        let maybe_freeze_cap = if (freezable) { 
+            // emit freeze cap created event
+            event::emit(FreezeCapCreated { cointype: name });
+            option::some(freeze_cap) 
         } else { 
             coin::destroy_freeze_cap<CoinType>(freeze_cap);
             option::none() 
@@ -289,8 +306,8 @@ module bapt_framework::deployer_v2 {
     }
     
     inline fun collect_fees(deployer: &signer) acquires Config {
-        let fee = borrow_global<Config>(@bapt_framework).fee;
-        coin::transfer<APT>(deployer, @bapt_framework, fee);
+        let fee = borrow_global<Config>(@bapt_framework_testnet).fee;
+        coin::transfer<APT>(deployer, @bapt_framework_testnet, fee);
     }
 
     // returns the burn cap for a coin
