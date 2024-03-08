@@ -64,6 +64,12 @@ module bapt_framework::deployer_v2 {
     // ------
 
     #[event]
+    struct BurnCapCreated has drop, store { cointype: String }
+
+    #[event]
+    struct FreezeCapCreated has drop, store { cointype: String }
+
+    #[event]
     struct FeeUpdated has drop, store { old_fee: u64, new_fee: u64 }
 
     #[event]
@@ -71,6 +77,9 @@ module bapt_framework::deployer_v2 {
 
     #[event]
     struct CoinsBurned has drop, store { cointype: String, amount: u64 }
+
+    #[event]
+    struct CoinsFrozen has drop, store { cointype: String, amount: u64 }
 
     // -----------
     // Initializer
@@ -269,12 +278,18 @@ module bapt_framework::deployer_v2 {
         // destroy mint cap
         coin::destroy_mint_cap<CoinType>(mint_cap);
         // deal freeze and burn caps
-        let maybe_burn_cap = if (burnable) { option::some(burn_cap) 
+        let maybe_burn_cap = if (burnable) { 
+            // emit burn cap created event 
+            event::emit(BurnCapCreated { cointype: name });
+            option::some(burn_cap) 
         } else { 
             coin::destroy_burn_cap<CoinType>(burn_cap);
             option::none() 
         };
-        let maybe_freeze_cap = if (freezable) { option::some(freeze_cap) 
+        let maybe_freeze_cap = if (freezable) {
+            // emit freeze cap created event
+            event::emit(FreezeCapCreated { cointype: name }); 
+            option::some(freeze_cap) 
         } else { 
             coin::destroy_freeze_cap<CoinType>(freeze_cap);
             option::none() 
