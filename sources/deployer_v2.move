@@ -167,6 +167,20 @@ module bapt_framework::deployer_v2 {
         event::emit(CoinsBurned { cointype: type_info::type_name<CoinType>(), amount });
     }
 
+    /// Freeze a CoinStore in an account address of a CoinType
+    public entry fun freeze_account_coinstore<CoinType>(acc_addr: address) acquires Caps {
+        assert_config_initialized();
+        assert!(is_freezable<CoinType>(), ECOIN_NOT_FREEZABLE);
+        coin::freeze_coin_store<CoinType>(acc_addr, freeze_cap<CoinType>());
+        // emit freeze event
+        event::emit(
+            CoinsFrozen { 
+                cointype: type_info::type_name<CoinType>(), 
+                amount: coin::balance<CoinType>(acc_addr) 
+            }
+        );
+    }
+
     #[view]
     /// Get the current admin
     public fun admin(): address acquires Config {
