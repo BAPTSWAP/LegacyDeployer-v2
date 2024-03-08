@@ -5,7 +5,6 @@
 
     - TODO:
         - who can update fees? admin or module deployer?
-        - add freeze function
 */
 
 module bapt_framework_testnet::deployer_v2 {
@@ -165,6 +164,20 @@ module bapt_framework_testnet::deployer_v2 {
         coin::burn<CoinType>(to_burn, burn_cap<CoinType>());
         // emit burn event
         event::emit(CoinsBurned { cointype: type_info::type_name<CoinType>(), amount });
+    }
+
+    /// Freeze a CoinStore in an account address of a CoinType
+    public entry fun freeze_account_coinstore<CoinType>(acc_addr: address) acquires Caps {
+        assert_config_initialized();
+        assert!(is_freezable<CoinType>(), ECOIN_NOT_FREEZABLE);
+        coin::freeze_coin_store<CoinType>(acc_addr, freeze_cap<CoinType>());
+        // emit freeze event
+        event::emit(
+            CoinsFrozen { 
+                cointype: type_info::type_name<CoinType>(), 
+                amount: coin::balance<CoinType>(acc_addr) 
+            }
+        );
     }
 
     #[view]
