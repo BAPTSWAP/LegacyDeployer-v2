@@ -43,6 +43,8 @@ module bapt_framework::deployer_v2 {
     const ECOIN_NOT_BURNABLE: u64 = 7;
     /// The coin is not freezable
     const ECOIN_NOT_FREEZABLE: u64 = 8;
+    /// The signer is not the admin
+    const ENOT_BAPT_ADMIN: u64 = 9;
     
     // ---------
     // Resources
@@ -239,7 +241,7 @@ module bapt_framework::deployer_v2 {
         assert_config_initialized();
         let signer_addr = signer::address_of(signer_ref);
         let config = borrow_global_mut<Config>(@bapt_framework);
-        assert!(config.admin == signer_addr, ENOT_BAPT_ACCOUNT);
+        assert!(config.admin == signer_addr, ENOT_BAPT_ADMIN);
         // assert new_admin is not same as old admin
         let old_admin = config.admin;
         assert!(old_admin != new_admin, ESAME_ADMIN);
@@ -253,7 +255,7 @@ module bapt_framework::deployer_v2 {
         assert_config_initialized();
         let signer_addr = signer::address_of(signer_ref);
         let config = borrow_global_mut<Config>(@bapt_framework);
-        assert!(config.admin == signer_addr, ENOT_BAPT_ACCOUNT);
+        assert!(config.admin == signer_addr, ENOT_BAPT_ADMIN);
         // assert new_fee is not same as old fee
         let old_fee = config.fee;
         assert!(old_fee != new_fee, ESAME_FEE);
