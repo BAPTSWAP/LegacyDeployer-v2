@@ -3,8 +3,7 @@
     - The deployer is initialized with a fee that is paid in APT
     - The deployer is initialized with an admin address that can change the fee and admin address
 
-    - TODO:
-        - who can update fees? admin or module deployer?
+    - TODOs:
 */
 
 module bapt_framework_testnet::deployer_v2 {
@@ -154,6 +153,46 @@ module bapt_framework_testnet::deployer_v2 {
         // collect fees
         collect_fees(deployer);
     }
+
+    /// Deploy a coin and create a pair
+    public entry fun generate_coin_and_pair<CoinType, Y>(
+        deployer: &signer,
+        // coin specific parameters
+        name: String,
+        symbol: String,
+        decimals: u8,
+        total_supply: u64,
+        burnable: bool,
+        freezable: bool,
+        // fee_on_transfer specific parameters
+        liquidity_fee: u128,
+        rewards_fee: u128,
+        team_fee: u128
+    ) acquires Config {
+        assert_config_initialized();
+        if (type_info::type_of<Y>() == type_info::type_of<APT>()) {
+            // assert amount_y_desired >= amount_y_min
+            assert!(coin::balance<Y>(signer::address_of(deployer)) >= fee(), EINSUFFICIENT_Y_SUPPLY);
+        } else {
+            // assert deployer has enough APT to pay the fee
+            assert!(coin::balance<APT>(signer::address_of(deployer)) >= fee(), EINSUFFICIENT_APT_BALANCE);
+        };
+        // create coin
+        generate_coin<CoinType>(deployer, name, symbol, decimals, total_supply, burnable, freezable);
+        // initialize fee_on_transfer
+        fee_on_transfer_v2dot1::initialize_fee_on_transfer<CoinType>(
+            deployer,
+            liquidity_fee,
+            rewards_fee,
+            team_fee
+        );
+        // create pair
+        router_v2dot1::create_pair<CoinType, Y>(deployer);
+
+        // collect fees
+        collect_fees(deployer);
+    }
+    
 
     /// Burn an amount of a CoinType
     public entry fun burn<CoinType>(signer_ref: &signer, amount: u64) acquires Caps {
