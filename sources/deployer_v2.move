@@ -3,8 +3,7 @@
     - The deployer is initialized with a fee that is paid in APT
     - The deployer is initialized with an admin address that can change the fee and admin address
 
-    - TODOs: 
-        - redeployment is needed   
+    - TODOs:   
 */
 
 module bapt_framework::deployer_v2 {
