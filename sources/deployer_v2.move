@@ -4,7 +4,8 @@
     - The deployer is initialized with an admin address that can change the fee and admin address
 
     - TODOs: 
-        - redeployment is needed   
+        - redeployment is needed 
+        - update generate tokens function  
 */
 
 module bapt_framework_testnet::deployer_v2 {
