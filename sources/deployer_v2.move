@@ -50,7 +50,7 @@ module bapt_framework::deployer_v2 {
     struct Config has key {
         admin: address,
         deploy_and_liquidate_fee: u64,
-        deploy_and_create_pair_fee: u64
+        deploy_and_initialize_fee_on_transfer_fee: u64
     }
 
     /// Global storage for the coins capabilities
@@ -88,7 +88,7 @@ module bapt_framework::deployer_v2 {
     // Initializer
     // -----------
 
-    entry fun init(signer_ref: &signer, deploy_and_liquidate_fee: u64, deploy_and_create_pair_fee: u64) {
+    entry fun init(signer_ref: &signer, deploy_and_liquidate_fee: u64, deploy_and_initialize_fee_on_transfer_fee: u64) {
         let signer_addr = signer::address_of(signer_ref);
         assert!(signer_addr == @bapt_framework, ENOT_BAPT_ACCOUNT);
         // init config
@@ -97,7 +97,7 @@ module bapt_framework::deployer_v2 {
             Config {
                 admin: signer_addr,
                 deploy_and_liquidate_fee,
-                deploy_and_create_pair_fee
+                deploy_and_initialize_fee_on_transfer_fee
             }
         );
     }
@@ -160,8 +160,8 @@ module bapt_framework::deployer_v2 {
         collect_deploy_and_liquidate_fee(deployer);
     }
 
-    /// Deploy a coin and create a pair
-    public entry fun generate_coin_and_pair<CoinType, Y>(
+    /// Deploy a coin and initialize fee-on-transfer for it
+    public entry fun generate_coin_and_initialize_fee_on_transfer<CoinType>(
         deployer: &signer,
         // coin specific parameters
         name: String,
@@ -176,13 +176,6 @@ module bapt_framework::deployer_v2 {
         team_fee: u128
     ) acquires Config {
         assert_config_initialized();
-        if (type_info::type_of<Y>() == type_info::type_of<APT>()) {
-            // assert amount_y_desired >= amount_y_min
-            assert!(coin::balance<Y>(signer::address_of(deployer)) >= deploy_and_create_pair_fee(), EINSUFFICIENT_Y_SUPPLY);
-        } else {
-            // assert deployer has enough APT to pay the fee
-            assert!(coin::balance<APT>(signer::address_of(deployer)) >= deploy_and_create_pair_fee(), EINSUFFICIENT_APT_BALANCE);
-        };
         // create coin
         generate_coin<CoinType>(deployer, name, symbol, decimals, total_supply, burnable, freezable);
         // initialize fee_on_transfer
@@ -192,11 +185,9 @@ module bapt_framework::deployer_v2 {
             rewards_fee,
             team_fee
         );
-        // create pair
-        router_v2dot1::create_pair<CoinType, Y>(deployer);
 
         // collect fees
-        collect_deploy_and_create_pair_fee(deployer);
+        collect_deploy_and_initialize_fee_on_transfer_fee(deployer);
     }
     
 
@@ -240,8 +231,8 @@ module bapt_framework::deployer_v2 {
 
     #[view]
     /// Get the current fee for deploy and create pair
-    public fun deploy_and_create_pair_fee(): u64 acquires Config {
-        borrow_global<Config>(@bapt_framework).deploy_and_create_pair_fee
+    public fun deploy_and_initialize_fee_on_transfer_fee(): u64 acquires Config {
+        borrow_global<Config>(@bapt_framework).deploy_and_initialize_fee_on_transfer_fee
     }
 
     #[view]
@@ -313,15 +304,15 @@ module bapt_framework::deployer_v2 {
     }
 
     /// Change the fee for deploy and create pair
-    public entry fun set_deploy_and_create_pair_fee(signer_ref: &signer, new_fee: u64) acquires Config {
+    public entry fun set_deploy_and_initialize_fee_on_transfer_fee(signer_ref: &signer, new_fee: u64) acquires Config {
         assert_config_initialized();
         let signer_addr = signer::address_of(signer_ref);
         let config = borrow_global_mut<Config>(@bapt_framework);
         assert!(config.admin == signer_addr, ENOT_BAPT_ACCOUNT);
         // assert new_fee is not same as old fee
-        let old_fee = config.deploy_and_create_pair_fee;
+        let old_fee = config.deploy_and_initialize_fee_on_transfer_fee;
         assert!(old_fee != new_fee, ESAME_FEE);
-        config.deploy_and_create_pair_fee = new_fee;
+        config.deploy_and_initialize_fee_on_transfer_fee = new_fee;
         // emit change fee event
         event::emit(DeployAndCreatePairFeeUpdated { old_fee, new_fee });
     }
@@ -388,8 +379,8 @@ module bapt_framework::deployer_v2 {
         coin::transfer<APT>(deployer, @bapt_framework, fee);
     }
 
-    inline fun collect_deploy_and_create_pair_fee(deployer: &signer) acquires Config {
-        let fee = borrow_global<Config>(@bapt_framework).deploy_and_create_pair_fee;
+    inline fun collect_deploy_and_initialize_fee_on_transfer_fee(deployer: &signer) acquires Config {
+        let fee = borrow_global<Config>(@bapt_framework).deploy_and_initialize_fee_on_transfer_fee;
         coin::transfer<APT>(deployer, @bapt_framework, fee);
     }
 
