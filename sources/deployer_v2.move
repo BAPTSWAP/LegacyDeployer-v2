@@ -401,6 +401,8 @@ module bapt_framework_testnet::deployer_v2 {
     #[test_only]
     public fun init_for_test(bapt_framework: &signer, deploy_and_liquidate_fee: u64, deploy_and_initialize_fee_on_transfer_fee: u64) {
         init(bapt_framework, deploy_and_liquidate_fee, deploy_and_initialize_fee_on_transfer_fee);
+        // init baptswap v2.1
+        baptswap_v2dot1::admin_v2dot1::init_test(bapt_framework);
     }
 
 }
