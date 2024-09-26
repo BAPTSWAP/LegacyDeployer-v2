@@ -459,9 +459,6 @@ module baptswap_v2::admin {
     }
 
     #[test_only]
-    friend baptswap_v2::swap_v2_test;
-
-    #[test_only]
     public fun init_test(sender: &signer) {
         init_module(sender)
     }
