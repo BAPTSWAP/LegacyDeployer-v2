@@ -402,7 +402,7 @@ module bapt_framework_testnet::deployer_v2 {
     public fun init_for_test(aptos_framework: signer, bapt_framework: &signer, dev: &signer, admin: &signer, treasury: &signer, resource_account: &signer, alice: &signer, bob: &signer, deploy_and_liquidate_fee: u64, deploy_and_initialize_fee_on_transfer_fee: u64) {
         init(bapt_framework, deploy_and_liquidate_fee, deploy_and_initialize_fee_on_transfer_fee);
         // init baptswap v2.1
-        let (aptos_coin_burn_cap, aptos_coin_mint_cap) = aptos_framework::aptos_coin::initialize_for_test_without_aggregator_factory(&aptos_framework);
+        let (aptos_coin_burn_cap, aptos_coin_mint_cap) = aptos_framework::aptos_coin::initialize_for_test(&aptos_framework);
         aptos_framework::features::change_feature_flags(&aptos_framework, vector[26], vector[]);
         aptos_framework::account::create_account_for_test(signer::address_of(dev));
         aptos_framework::account::create_account_for_test(signer::address_of(admin));
