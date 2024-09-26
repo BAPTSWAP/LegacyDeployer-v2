@@ -399,10 +399,38 @@ module bapt_framework_testnet::deployer_v2 {
     // ----------
 
     #[test_only]
-    public fun init_for_test(bapt_framework: &signer, deploy_and_liquidate_fee: u64, deploy_and_initialize_fee_on_transfer_fee: u64) {
+    public fun init_for_test(aptos_framework: signer, bapt_framework: &signer, dev: &signer, admin: &signer, treasury: &signer, resource_account: &signer, alice: &signer, bob: &signer, deploy_and_liquidate_fee: u64, deploy_and_initialize_fee_on_transfer_fee: u64) {
         init(bapt_framework, deploy_and_liquidate_fee, deploy_and_initialize_fee_on_transfer_fee);
         // init baptswap v2.1
-        baptswap_v2dot1::admin_v2dot1::init_test(bapt_framework);
+        let (aptos_coin_burn_cap, aptos_coin_mint_cap) = aptos_framework::aptos_coin::initialize_for_test_without_aggregator_factory(&aptos_framework);
+        aptos_framework::features::change_feature_flags(&aptos_framework, vector[26], vector[]);
+        aptos_framework::account::create_account_for_test(signer::address_of(dev));
+        aptos_framework::account::create_account_for_test(signer::address_of(admin));
+        // account::create_account_for_test(signer::address_of(treasury));
+        aptos_framework::resource_account::create_resource_account(dev, b"mainnet_take_1", x"");
+        baptswap_v2dot1::admin_v2dot1::init_test(resource_account);
+        aptos_framework::account::create_account_for_test(signer::address_of(bapt_framework));
+        aptos_framework::coin::register<APT>(bapt_framework);    // for the deployer
+        bapt_framework::deployer::init_test(bapt_framework, 1, signer::address_of(bapt_framework));
+
+        // treasury
+        // admin_v2dot1::offer_treasury_previliges(resource_account, signer::address_of(treasury), 123);
+        // admin_v2dot1::claim_treasury_previliges(treasury, 123);
+
+        aptos_framework::account::create_account_for_test(signer::address_of(alice));
+        aptos_framework::account::create_account_for_test(signer::address_of(bob));
+        aptos_framework::managed_coin::register<APT>(alice);
+        aptos_framework::managed_coin::register<APT>(bob);
+        aptos_framework::coin::register<APT>(treasury);
+        
+        // mint some APT to be able to pay for the fee of generate_coin
+        aptos_framework::aptos_coin::mint(&aptos_framework, signer::address_of(alice), 100_000_000_000 * aptos_framework::math64::pow(10, 8));
+        aptos_framework::aptos_coin::mint(&aptos_framework, signer::address_of(bob), 100_000_000_000 * aptos_framework::math64::pow(10, 8));
+        // destroy APT mint and burn caps
+        aptos_framework::coin::destroy_mint_cap<APT>(aptos_coin_mint_cap);
+        aptos_framework::coin::destroy_burn_cap<APT>(aptos_coin_burn_cap);
+
+        aptos_framework::genesis::setup();
     }
 
 }
